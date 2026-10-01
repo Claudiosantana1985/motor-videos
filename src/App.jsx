@@ -82,8 +82,33 @@ function App() {
       'motor-videos-biblioteca',
       JSON.stringify(novaBiblioteca),
     )
-  }
+  } function atualizarStatusAgendamento(id, novoStatus) {
+  const novosAgendamentos = agendamentos.map((agendamento) =>
+    agendamento.id === id
+      ? {
+          ...agendamento,
+          status: novoStatus,
+        }
+      : agendamento,
+  )
 
+  setAgendamentos(novosAgendamentos)
+
+  localStorage.setItem(
+    'motor-videos-agendamentos',
+    JSON.stringify(novosAgendamentos),
+  )
+}
+ const totalNaFila = agendamentos.filter(
+  (agendamento) => agendamento.status === 'na-fila',
+).length
+const totalAgendados = agendamentos.filter(
+  (agendamento) => agendamento.status === 'agendado',
+).length
+
+const totalPublicados = agendamentos.filter(
+  (agendamento) => agendamento.status === 'publicado',
+).length
   return (
     <div className="app">
 
@@ -231,10 +256,9 @@ function App() {
                 <span>📅</span>
 
                 <div>
-                  <strong>{agendamentos.length}</strong>
-
+                  <strong>{totalAgendados}</strong>
                   <small>
-                    Agendados
+                    Agendados 
                   </small>
                 </div>
               </article>
@@ -244,7 +268,7 @@ function App() {
                 <span>🚀</span>
 
                 <div>
-                  <strong>0</strong>
+                  <strong>{totalPublicados}</strong>
 
                   <small>
                     Publicados
@@ -257,7 +281,7 @@ function App() {
                 <span>⏳</span>
 
                 <div>
-                  <strong>0</strong>
+                  <strong>{totalNaFila}</strong>
 
                   <small>
                     Na fila
@@ -571,6 +595,37 @@ function App() {
                 {' — '}
                 🕐 {agendamento.hora}
               </small>
+              {agendamento.status === 'agendado' && (
+  <button
+    onClick={() =>
+      atualizarStatusAgendamento(
+        agendamento.id,
+        'na-fila',
+      )
+    }
+  >
+    🚀 Enviar para fila
+  </button>
+)}
+
+{agendamento.status === 'na-fila' && (
+  <button
+    onClick={() =>
+      atualizarStatusAgendamento(
+        agendamento.id,
+        'publicado',
+      )
+    }
+  >
+    ✅ Simular publicação
+  </button>
+)}
+
+{agendamento.status === 'publicado' && (
+  <button disabled>
+    ✅ Publicado
+  </button>
+)}
 
             </div>
 
