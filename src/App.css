@@ -1,0 +1,430 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #090d16;
+  color: #f5f7fb;
+  font-family:
+    Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+}
+
+.sidebar {
+  width: 250px;
+  min-height: 100vh;
+  background: #0d121d;
+  border-right: 1px solid #1e2635;
+  padding: 28px 18px;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  left: 0;
+  top: 0;
+}
+
+.logo {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 0 8px 28px;
+}
+
+.logo > span {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ff2d55, #7c3aed);
+}
+
+.logo strong,
+.logo small {
+  display: block;
+}
+
+.logo small {
+  margin-top: 3px;
+  color: #70798b;
+  font-size: 11px;
+}
+
+nav {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+nav button {
+  text-align: left;
+  border: 0;
+  padding: 13px 14px;
+  border-radius: 9px;
+  color: #8d96a8;
+  background: transparent;
+}
+
+nav button:hover,
+nav button.active {
+  background: #171e2c;
+  color: white;
+}
+
+nav button.active {
+  border-left: 3px solid #ff2d55;
+}
+
+.status {
+  margin-top: auto;
+  color: #768094;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  background: #20c875;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #20c875;
+}
+
+.content {
+  margin-left: 250px;
+  width: calc(100% - 250px);
+  padding: 42px;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+}
+
+header h1 {
+  font-size: 32px;
+  margin: 5px 0 6px;
+}
+
+header p {
+  color: #828b9e;
+  margin: 0;
+}
+
+.eyebrow {
+  color: #ff4267 !important;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.tiktokStatus {
+  padding: 10px 14px;
+  background: #121824;
+  border: 1px solid #252d3d;
+  border-radius: 9px;
+  color: #8e97a8;
+  font-size: 13px;
+}
+
+.tiktokStatus span {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 7px;
+  background: #ff425e;
+  border-radius: 50%;
+}
+
+.searchCard {
+  background: #101622;
+  border: 1px solid #202838;
+  border-radius: 15px;
+  padding: 25px;
+}
+
+.searchCard h2,
+.results h2 {
+  margin: 0 0 5px;
+  font-size: 18px;
+}
+
+.searchCard p,
+.results p {
+  color: #737d90;
+  margin: 0;
+  font-size: 13px;
+}
+
+.searchBar {
+  display: grid;
+  grid-template-columns: 1fr 170px 110px;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.searchBar input,
+.searchBar select {
+  background: #090e17;
+  color: white;
+  border: 1px solid #283144;
+  padding: 13px;
+  border-radius: 8px;
+  outline: none;
+}
+
+.searchBar input:focus {
+  border-color: #7c3aed;
+}
+
+.searchBar button {
+  border: 0;
+  color: white;
+  border-radius: 8px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #ff315d, #7c3aed);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+  margin: 20px 0;
+}
+
+.stats article {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 18px;
+  background: #101622;
+  border: 1px solid #202838;
+  border-radius: 12px;
+}
+
+.stats article > span {
+  font-size: 22px;
+}
+
+.stats strong,
+.stats small {
+  display: block;
+}
+
+.stats strong {
+  font-size: 22px;
+}
+
+.stats small {
+  color: #717b8e;
+  margin-top: 2px;
+}
+
+.results {
+  background: #101622;
+  border: 1px solid #202838;
+  border-radius: 15px;
+  padding: 25px;
+  min-height: 320px;
+}
+
+.empty {
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.empty div {
+  font-size: 45px;
+  opacity: 0.7;
+}
+
+.empty h3 {
+  margin: 12px 0 5px;
+}
+
+.empty p {
+  max-width: 390px;
+  line-height: 1.6;
+}
+
+.videoGrid {
+  margin-top: 22px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.videoCard {
+  overflow: hidden;
+  border: 1px solid #252d3d;
+  border-radius: 12px;
+  background: #0b1019;
+}
+
+.thumbnail {
+  height: 155px;
+  position: relative;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at center, #27314a, transparent 50%),
+    linear-gradient(135deg, #171e2e, #080c14);
+}
+
+.thumbnail > span {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  padding-left: 3px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+}
+
+.thumbnail small {
+  position: absolute;
+  right: 9px;
+  bottom: 8px;
+  background: #05070b;
+  padding: 3px 6px;
+  border-radius: 4px;
+}
+
+.videoInfo {
+  padding: 15px;
+}
+
+.videoInfo h3 {
+  font-size: 14px;
+  margin: 8px 0 15px;
+}
+
+.source {
+  color: #9a75ff;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.videoInfo button {
+  width: 100%;
+  border: 1px solid #30394c;
+  background: #161d2a;
+  color: white;
+  padding: 9px;
+  border-radius: 7px;
+}
+
+.videoInfo button:hover {
+  background: #222b3d;
+}
+
+@media (max-width: 900px) {
+  .sidebar {
+    width: 75px;
+  }
+
+  .logo div,
+  nav button {
+    font-size: 0;
+  }
+
+  nav button {
+    text-align: center;
+    font-size: 18px;
+  }
+
+  .status {
+    display: none;
+  }
+
+  .content {
+    margin-left: 75px;
+    width: calc(100% - 75px);
+    padding: 22px;
+  }
+
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .videoGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  header {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .searchBar {
+    grid-template-columns: 1fr;
+  }
+
+  .stats,
+  .videoGrid {
+    grid-template-columns: 1fr;
+  }
+}
+.thumbnail {
+  overflow: hidden;
+}
+
+.thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.playButton {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+
+  width: 48px;
+  height: 48px;
+
+  display: grid;
+  place-items: center;
+
+  padding-left: 3px;
+
+  background: rgba(0, 0, 0, 0.72);
+  color: white;
+
+  border-radius: 50%;
+  text-decoration: none;
+
+  backdrop-filter: blur(4px);
+}
+
+.playButton:hover {
+  transform: translate(-50%, -50%) scale(1.08);
+}
