@@ -1,6 +1,7 @@
-import { useState } from 'react'
 import './App.css'
 import AgendamentoModal from './AgendamentoModal'
+import { useEffect, useState } from 'react'
+
 
 function App() {
   const [busca, setBusca] = useState('')
@@ -27,6 +28,100 @@ function App() {
       return []
     }
   })
+  useEffect(() => {
+  const verificarAgendamentos = () => {
+    const agora = new Date()
+
+    setAgendamentos((agendamentosAtuais) => {
+      let houveAlteracao = false
+
+      const novosAgendamentos = agendamentosAtuais.map(
+        (agendamento) => {
+          if (agendamento.status !== 'agendado') {
+            return agendamento
+          }
+
+          const dataAgendada = new Date(
+            `${agendamento.data}T${agendamento.hora}`,
+          )
+
+          if (dataAgendada <= agora) {
+            houveAlteracao = true
+
+            return {
+              ...agendamento,
+              status: 'na-fila',
+            }
+          }
+
+          return agendamento
+        },
+      )
+
+      if (houveAlteracao) {
+        localStorage.setItem(
+          'motor-videos-agendamentos',
+          JSON.stringify(novosAgendamentos),
+        )
+
+        return novosAgendamentos
+      }
+
+      return agendamentosAtuais
+    })
+  }
+
+  verificarAgendamentos()
+
+  const intervalo = setInterval(
+    verificarAgendamentos,
+    10000,
+  )
+
+  return () => clearInterval(intervalo)
+}, []) 
+useEffect(() => {
+  const processarFila = () => {
+    setAgendamentos((agendamentosAtuais) => {
+      let houveAlteracao = false
+
+      const novosAgendamentos = agendamentosAtuais.map(
+        (agendamento) => {
+          if (agendamento.status !== 'na-fila') {
+            return agendamento
+          }
+
+          houveAlteracao = true
+
+          return {
+            ...agendamento,
+            status: 'publicado',
+            publicadoEm: new Date().toISOString(),
+          }
+        },
+      )
+
+      if (houveAlteracao) {
+        localStorage.setItem(
+          'motor-videos-agendamentos',
+          JSON.stringify(novosAgendamentos),
+        )
+
+        return novosAgendamentos
+      }
+
+      return agendamentosAtuais
+    })
+  }
+
+  const intervaloPublicacao = setInterval(
+    processarFila,
+    10000,
+  )
+
+  return () =>
+    clearInterval(intervaloPublicacao)
+}, [])
 
   async function buscarVideos() {
     if (!busca.trim()) return
@@ -596,15 +691,8 @@ const totalPublicados = agendamentos.filter(
                 🕐 {agendamento.hora}
               </small>
               {agendamento.status === 'agendado' && (
-  <button
-    onClick={() =>
-      atualizarStatusAgendamento(
-        agendamento.id,
-        'na-fila',
-      )
-    }
-  >
-    🚀 Enviar para fila
+  <button disabled>
+    ⏳ Aguardando horário
   </button>
 )}
 
