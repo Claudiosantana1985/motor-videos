@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import db from './database.js'
+import { publicarVideo } from './services/publicador.js'
 dotenv.config()
 
 const app = express()
@@ -237,7 +238,7 @@ setInterval(
   verificarAgendamentos,
   10000,
 ) 
-function processarFilaPublicacao() {
+async function processarFilaPublicacao() {
   try {
     const itensNaFila = db
       .prepare(`
@@ -246,29 +247,63 @@ function processarFilaPublicacao() {
         WHERE status = 'na-fila'
       `)
       .all()
+for (const item of itensNaFila) {
+  try {
+    const alteracao = db.prepare(`
+      UPDATE agendamentos
+      SET status = 'publicando'
+      WHERE id = ?
+        AND status = 'na-fila'
+    `).run(item.id)
 
-    for (const item of itensNaFila) {
-      console.log(
-        `🚀 Processando publicação: ${item.titulo}`,
-      )
+    if (alteracao.changes === 0) {
+      continue
+    }
 
-      // SIMULAÇÃO.
-      // Futuramente a chamada à API do TikTok entra aqui.
+    console.log(
+      `📤 Item marcado como PUBLICANDO: ${item.id}`,
+    )
 
-      db.prepare(`
-        UPDATE agendamentos
-        SET
-          status = 'publicado',
-          publicado_em = ?
-        WHERE id = ?
-      `).run(
-        new Date().toISOString(),
-        item.id,
-      )
+    const resultado = await publicarVideo(item)
 
-      console.log(
-        `✅ Publicação simulada concluída: ${item.id}`,
-      )
+        if (!resultado.sucesso) {
+          console.error(
+            `❌ Falha na publicação: ${item.id}`,
+          )
+
+          continue
+        }
+
+        db.prepare(`
+          UPDATE agendamentos
+          SET
+            status = 'publicado',
+            publicado_em = ?
+          WHERE id = ?
+        `).run(
+          resultado.publicadoEm,
+          item.id,
+        )
+
+        console.log(
+          `💾 Publicação registrada no banco: ${item.id}`,
+        )
+      } catch (error) {
+  console.error(
+    `❌ Erro ao publicar ${item.id}:`,
+    error,
+  )
+
+  db.prepare(`
+    UPDATE agendamentos
+    SET status = 'erro'
+    WHERE id = ?
+  `).run(item.id)
+
+  console.log(
+    `⚠️ Publicação marcada como ERRO: ${item.id}`,
+  )
+}
     }
   } catch (error) {
     console.error(
