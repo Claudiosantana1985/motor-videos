@@ -29,100 +29,42 @@ function App() {
     }
   })
   useEffect(() => {
-  const verificarAgendamentos = () => {
-    const agora = new Date()
-
-    setAgendamentos((agendamentosAtuais) => {
-      let houveAlteracao = false
-
-      const novosAgendamentos = agendamentosAtuais.map(
-        (agendamento) => {
-          if (agendamento.status !== 'agendado') {
-            return agendamento
-          }
-
-          const dataAgendada = new Date(
-            `${agendamento.data}T${agendamento.hora}`,
-          )
-
-          if (dataAgendada <= agora) {
-            houveAlteracao = true
-
-            return {
-              ...agendamento,
-              status: 'na-fila',
-            }
-          }
-
-          return agendamento
-        },
+  async function carregarAgendamentos() {
+    try {
+      const response = await fetch(
+        'http://localhost:3001/api/agendamentos',
       )
 
-      if (houveAlteracao) {
-        localStorage.setItem(
-          'motor-videos-agendamentos',
-          JSON.stringify(novosAgendamentos),
-        )
+      const data = await response.json()
 
-        return novosAgendamentos
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+            'Erro ao carregar agendamentos',
+        )
       }
 
-      return agendamentosAtuais
-    })
+      setAgendamentos(data.agendamentos)
+    } catch (error) {
+      console.error(
+        'Erro ao carregar agendamentos:',
+        error,
+      )
+    }
   }
 
-  verificarAgendamentos()
+  // Carrega imediatamente ao abrir a aplicação
+  carregarAgendamentos()
 
+  // Depois sincroniza com o backend a cada 5 segundos
   const intervalo = setInterval(
-    verificarAgendamentos,
-    10000,
+    carregarAgendamentos,
+    5000,
   )
 
   return () => clearInterval(intervalo)
-}, []) 
-useEffect(() => {
-  const processarFila = () => {
-    setAgendamentos((agendamentosAtuais) => {
-      let houveAlteracao = false
-
-      const novosAgendamentos = agendamentosAtuais.map(
-        (agendamento) => {
-          if (agendamento.status !== 'na-fila') {
-            return agendamento
-          }
-
-          houveAlteracao = true
-
-          return {
-            ...agendamento,
-            status: 'publicado',
-            publicadoEm: new Date().toISOString(),
-          }
-        },
-      )
-
-      if (houveAlteracao) {
-        localStorage.setItem(
-          'motor-videos-agendamentos',
-          JSON.stringify(novosAgendamentos),
-        )
-
-        return novosAgendamentos
-      }
-
-      return agendamentosAtuais
-    })
-  }
-
-  const intervaloPublicacao = setInterval(
-    processarFila,
-    10000,
-  )
-
-  return () =>
-    clearInterval(intervaloPublicacao)
 }, [])
-
+ 
   async function buscarVideos() {
     if (!busca.trim()) return
 
@@ -728,30 +670,57 @@ const totalPublicados = agendamentos.filter(
   </section>
 )}
 
-      </main>       {videoParaAgendar && (
+      </main>
+
+      {videoParaAgendar && (
         <AgendamentoModal
           video={videoParaAgendar}
           onFechar={() => setVideoParaAgendar(null)}
-          onAgendar={(agendamento) => {
-  const novosAgendamentos = [
-    ...agendamentos,
-    agendamento,
-  ]
+          onAgendar={async (agendamento) => {
+            try {
+              const response = await fetch(
+                'http://localhost:3001/api/agendamentos',
+                {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify(agendamento),
+                },
+              )
 
-  setAgendamentos(novosAgendamentos)
+              const data = await response.json()
 
-  localStorage.setItem(
-    'motor-videos-agendamentos',
-    JSON.stringify(novosAgendamentos),
-  )
+              if (!response.ok) {
+                throw new Error(
+                  data.error ||
+                    'Erro ao salvar agendamento no servidor',
+                )
+              }
 
-  setVideoParaAgendar(null)
+              const novosAgendamentos = [
+                ...agendamentos,
+                agendamento,
+              ]
 
-  alert('Vídeo agendado com sucesso!')
-}}
-            
-            
-          
+              setAgendamentos(novosAgendamentos)
+
+              localStorage.setItem(
+                'motor-videos-agendamentos',
+                JSON.stringify(novosAgendamentos),
+              )
+
+              setVideoParaAgendar(null)
+
+              alert('Vídeo agendado com sucesso!')
+            } catch (error) {
+              console.error(error)
+
+              alert(
+                `Erro ao criar agendamento: ${error.message}`,
+              )
+            }
+          }}
         />
       )}
 
