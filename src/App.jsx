@@ -1,10 +1,22 @@
 import { useState } from 'react'
 import './App.css'
+import AgendamentoModal from './AgendamentoModal'
 
 function App() {
   const [busca, setBusca] = useState('')
   const [videos, setVideos] = useState([])
   const [tela, setTela] = useState('buscar')
+  const [videoParaAgendar, setVideoParaAgendar] = useState(null)
+
+   const [agendamentos, setAgendamentos] = useState(() => {
+  try {
+    return JSON.parse(
+      localStorage.getItem('motor-videos-agendamentos'),
+    ) || []
+  } catch {
+    return []
+  }
+})
 
   const [biblioteca, setBiblioteca] = useState(() => {
     try {
@@ -102,10 +114,12 @@ function App() {
             📚 Biblioteca
           </button>
 
-          <button>
-            📅 Agendamentos
-          </button>
-
+<button
+  className={tela === 'agendamentos' ? 'active' : ''}
+  onClick={() => setTela('agendamentos')}
+>
+  📅 Agendamentos
+</button>
           <button>
             📊 Histórico
           </button>
@@ -217,7 +231,7 @@ function App() {
                 <span>📅</span>
 
                 <div>
-                  <strong>0</strong>
+                  <strong>{agendamentos.length}</strong>
 
                   <small>
                     Agendados
@@ -451,6 +465,13 @@ function App() {
                           {video.canal}
                         </small>
                       )}
+                      <button
+  onClick={() =>
+    setVideoParaAgendar(video)
+  }
+>
+  📅 Agendar
+</button>
 
                       <button
                         onClick={() =>
@@ -472,9 +493,124 @@ function App() {
 
           </section>
 
-        )}
+        )}  
+        {/* TELA AGENDAMENTOS */}
 
-      </main>
+{tela === 'agendamentos' && (
+  <section className="results">
+
+    <div className="sectionTitle">
+      <div>
+        <h2>📅 Agendamentos</h2>
+
+        <p>
+          {agendamentos.length}{' '}
+          {agendamentos.length === 1
+            ? 'vídeo agendado'
+            : 'vídeos agendados'}
+        </p>
+      </div>
+    </div>
+
+    {agendamentos.length === 0 ? (
+
+      <div className="empty">
+        <div>📅</div>
+
+        <h3>Nenhum agendamento</h3>
+
+        <p>
+          Vá até sua biblioteca e escolha um vídeo
+          para agendar.
+        </p>
+      </div>
+
+    ) : (
+
+      <div className="videoGrid">
+
+        {agendamentos.map((agendamento) => (
+
+          <article
+            className="videoCard"
+            key={agendamento.id}
+          >
+
+            <div className="thumbnail">
+
+              {agendamento.video.thumbnail && (
+                <img
+                  src={agendamento.video.thumbnail}
+                  alt={agendamento.video.titulo}
+                />
+              )}
+
+              <a
+                href={agendamento.video.url}
+                target="_blank"
+                rel="noreferrer"
+                className="playButton"
+              >
+                ▶
+              </a>
+
+            </div>
+
+            <div className="videoInfo">
+
+              <span className="source">
+                {agendamento.status}
+              </span>
+
+              <h3>
+                {agendamento.video.titulo}
+              </h3>
+
+              <small>
+                📅 {agendamento.data}
+                {' — '}
+                🕐 {agendamento.hora}
+              </small>
+
+            </div>
+
+          </article>
+
+        ))}
+
+      </div>
+
+    )}
+
+  </section>
+)}
+
+      </main>       {videoParaAgendar && (
+        <AgendamentoModal
+          video={videoParaAgendar}
+          onFechar={() => setVideoParaAgendar(null)}
+          onAgendar={(agendamento) => {
+  const novosAgendamentos = [
+    ...agendamentos,
+    agendamento,
+  ]
+
+  setAgendamentos(novosAgendamentos)
+
+  localStorage.setItem(
+    'motor-videos-agendamentos',
+    JSON.stringify(novosAgendamentos),
+  )
+
+  setVideoParaAgendar(null)
+
+  alert('Vídeo agendado com sucesso!')
+}}
+            
+            
+          
+        />
+      )}
 
     </div>
   )

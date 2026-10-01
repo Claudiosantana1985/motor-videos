@@ -428,3 +428,167 @@ header p {
 .playButton:hover {
   transform: translate(-50%, -50%) scale(1.08);
 }
+/* MODAL DE AGENDAMENTO */
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+
+  background: rgba(3, 6, 12, 0.78);
+  backdrop-filter: blur(6px);
+}
+
+.modalAgendamento {
+  width: 100%;
+  max-width: 520px;
+
+  padding: 25px;
+
+  background: #101622;
+  border: 1px solid #293246;
+  border-radius: 16px;
+
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.55);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  margin-bottom: 22px;
+}
+
+.modalHeader h2 {
+  margin: 5px 0 0;
+}
+
+.modalClose {
+  width: 36px;
+  height: 36px;
+
+  border: 1px solid #30394c;
+  border-radius: 8px;
+
+  background: #171e2b;
+  color: white;
+}
+
+.modalVideo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  padding: 12px;
+
+  background: #0a0f18;
+  border: 1px solid #252e40;
+  border-radius: 10px;
+}
+
+.modalVideo img {
+  width: 110px;
+  height: 65px;
+
+  object-fit: cover;
+  border-radius: 7px;
+}
+
+.modalVideo strong,
+.modalVideo small {
+  display: block;
+}
+
+.modalVideo strong {
+  font-size: 14px;
+}
+
+.modalVideo small {
+  margin-top: 6px;
+  color: #7f899b;
+}
+
+.modalFields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+
+  margin-top: 22px;
+}
+
+.modalFields label {
+  color: #a7afbd;
+  font-size: 13px;
+}
+
+.modalFields input {
+  width: 100%;
+
+  margin-top: 7px;
+  padding: 12px;
+
+  background: #090e17;
+  color: white;
+
+  border: 1px solid #30394c;
+  border-radius: 8px;
+
+  color-scheme: dark;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+
+  margin-top: 25px;
+}
+
+.modalActions button {
+  padding: 11px 16px;
+  border-radius: 8px;
+}
+
+.cancelButton {
+  background: #171e2b;
+  color: #aab2c0;
+
+  border: 1px solid #30394c;
+}
+
+.scheduleButton {
+  border: 0;
+  color: white;
+  font-weight: 600;
+
+  background: linear-gradient(
+    135deg,
+    #ff315d,
+    #7c3aed
+  );
+}
+
+@media (max-width: 600px) {
+  .modalFields {
+    grid-template-columns: 1fr;
+  }
+
+  .modalVideo img {
+    width: 90px;
+  }
+
+  .modalActions {
+    flex-direction: column;
+  }
+
+  .modalActions button {
+    width: 100%;
+  }
+}
