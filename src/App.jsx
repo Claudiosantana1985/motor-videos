@@ -8,6 +8,8 @@ function App() {
   const [videos, setVideos] = useState([])
   const [tela, setTela] = useState('buscar')
   const [videoParaAgendar, setVideoParaAgendar] = useState(null)
+  const [videoSelecionado, setVideoSelecionado] = useState(null)
+  const [videosLocais, setVideosLocais] = useState([])
 
    const [agendamentos, setAgendamentos] = useState(() => {
   try {
@@ -18,6 +20,32 @@ function App() {
     return []
   }
 })
+
+useEffect(() => {
+  carregarVideosLocais()
+}, [])
+
+async function carregarVideosLocais() {
+  try {
+    const resposta = await fetch(
+      'http://localhost:3001/api/videos',
+    )
+
+    const dados = await resposta.json()
+
+    setVideosLocais(dados.videos || [])
+
+    console.log(
+      '📁 Vídeos locais:',
+      dados.videos,
+    )
+  } catch (error) {
+    console.error(
+      'Erro ao carregar vídeos locais:',
+      error,
+    )
+  }
+}
 
   const [biblioteca, setBiblioteca] = useState(() => {
     try {
@@ -438,123 +466,86 @@ const totalPublicados = agendamentos.filter(
 
         {/* TELA BIBLIOTECA */}
 
-        {tela === 'biblioteca' && (
 
-          <section className="results">
+          {tela === 'biblioteca' && (
+             <section className="results">
 
-            <div className="sectionTitle">
+    <div className="sectionTitle">
+      <div>
+        <h2>
+          📚 Minha Biblioteca
+        </h2>
 
-              <div>
-                <h2>
-                  📚 Minha Biblioteca
-                </h2>
+        <p>
+          {videosLocais.length}{' '}
+          {videosLocais.length === 1
+            ? 'vídeo disponível'
+            : 'vídeos disponíveis'}
+        </p>
+      </div>
+    </div>
 
-                <p>
-                  {biblioteca.length}{' '}
-                  {biblioteca.length === 1
-                    ? 'vídeo salvo'
-                    : 'vídeos salvos'}
-                </p>
-              </div>
+    {videosLocais.length === 0 ? (
+      <div className="empty">
+        <div>📚</div>
+
+        <h3>
+          Nenhum vídeo disponível
+        </h3>
+
+        <p>
+          Adicione arquivos de vídeo à pasta
+          videos para que apareçam aqui.
+        </p>
+      </div>
+    ) : (
+      <div className="videoGrid">
+
+        {videosLocais.map((video) => (
+          <article
+            className="videoCard"
+            key={video.caminhoVideo}
+          >
+            <div className="videoInfo">
+
+              <span className="source">
+                Arquivo local
+              </span>
+
+              <h3>
+                {video.nomeArquivo}
+              </h3>
+
+              <small>
+                📁 {video.caminhoVideo}
+              </small>
+
+              <button
+                onClick={() =>
+                  setVideoParaAgendar({
+                    id: video.caminhoVideo,
+                    titulo: video.nomeArquivo,
+                    canal: 'Arquivo local',
+                    thumbnail: null,
+                    url: null,
+                    fonte: 'local',
+                    caminhoVideo:
+                      video.caminhoVideo,
+                  })
+                }
+              >
+                📅 Agendar
+              </button>
 
             </div>
+          </article>
+        ))}
 
+      </div>
+    )}
 
-            {biblioteca.length === 0 ? (
-
-              <div className="empty">
-
-                <div>📚</div>
-
-                <h3>
-                  Sua biblioteca está vazia
-                </h3>
-
-                <p>
-                  Volte para Buscar vídeos e adicione
-                  conteúdos à sua biblioteca.
-                </p>
-
-              </div>
-
-            ) : (
-
-              <div className="videoGrid">
-
-                {biblioteca.map((video) => (
-
-                  <article
-                    className="videoCard"
-                    key={video.id}
-                  >
-
-                    <div className="thumbnail">
-
-                      {video.thumbnail && (
-                        <img
-                          src={video.thumbnail}
-                          alt={video.titulo}
-                          loading="lazy"
-                        />
-                      )}
-
-                      <a
-                        href={video.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="playButton"
-                        title="Abrir vídeo original"
-                      >
-                        ▶
-                      </a>
-
-                    </div>
-
-
-                    <div className="videoInfo">
-
-                      <span className="source">
-                        {video.fonte}
-                      </span>
-
-                      <h3>
-                        {video.titulo}
-                      </h3>
-
-                      {video.canal && (
-                        <small>
-                          {video.canal}
-                        </small>
-                      )}
-                      <button
-  onClick={() =>
-    setVideoParaAgendar(video)
-  }
->
-  📅 Agendar
-</button>
-
-                      <button
-                        onClick={() =>
-                          removerBiblioteca(video.id)
-                        }
-                      >
-                        Remover da biblioteca
-                      </button>
-
-                    </div>
-
-                  </article>
-
-                ))}
-
-              </div>
-
-            )}
-
-          </section>
-
-        )}  
+  </section>
+)} 
         {/* TELA AGENDAMENTOS */}
 
 {tela === 'agendamentos' && (
@@ -572,6 +563,40 @@ const totalPublicados = agendamentos.filter(
         </p>
       </div>
     </div>
+    <div className="videoGrid">
+  {videosLocais.map((video) => (
+    <div
+      className="videoCard"
+      key={video.caminhoVideo}
+    >
+      <div className="videoInfo">
+        <h3>
+          {video.nomeArquivo}
+        </h3>
+
+        <button
+  onClick={() =>
+    setVideoParaAgendar({
+      id: video.caminhoVideo,
+      titulo: video.nomeArquivo,
+      canal: 'Arquivo local',
+      thumbnail: null,
+      url: null,
+      fonte: 'local',
+      caminhoVideo: video.caminhoVideo,
+    })
+  }
+>
+  📅 Agendar
+</button>
+
+        <p>
+          📁 {video.caminhoVideo}
+        </p>
+      </div>
+    </div>
+  ))}
+</div>
 
     {agendamentos.length === 0 ? (
 

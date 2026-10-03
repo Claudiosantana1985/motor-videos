@@ -1,21 +1,137 @@
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
+import {
+  obterContaTikTok,
+  inicializarPublicacao,
+  enviarVideo,
+  consultarStatus,
+} from './tiktok.js'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
 export async function publicarVideo(item) {
   console.log('')
   console.log('🚀 Iniciando publicação')
   console.log(`🎬 Vídeo: ${item.titulo}`)
   console.log(`🆔 Agendamento: ${item.id}`)
 
-  // SIMULAÇÃO DE PUBLICAÇÃO
-  // Futuramente a integração oficial com o TikTok
-  // será executada neste ponto.
+  if (!item.caminhoVideo) {
+  throw new Error(
+    `Agendamento ${item.id} não possui arquivo de vídeo associado.`,
+  )
+}
 
-  const resultado = {
-    sucesso: true,
-    plataforma: 'simulacao',
-    publicadoEm: new Date().toISOString(),
+const caminhoVideo = path.resolve(
+  __dirname,
+  '..',
+  item.caminhoVideo,
+)
+
+  if (!fs.existsSync(caminhoVideo)) {
+    throw new Error(
+      `Arquivo de vídeo não encontrado: ${caminhoVideo}`,
+    )
   }
 
-  console.log('✅ Publicação concluída')
-  console.log('')
+  const informacoes = fs.statSync(caminhoVideo)
 
-  return resultado
+  const tamanhoBytes = informacoes.size
+  const tamanhoMB = tamanhoBytes / 1024 / 1024
+
+  console.log('📁 Arquivo encontrado')
+  console.log(`📦 Tamanho: ${tamanhoBytes} bytes`)
+  console.log(`📦 Aproximadamente: ${tamanhoMB.toFixed(2)} MB`)
+
+  const conta = obterContaTikTok()
+
+console.log('🔐 Conta TikTok carregada')
+
+const chunkSize = 10_000_000
+
+const totalChunkCount = Math.floor(
+  tamanhoBytes / chunkSize,
+)
+
+console.log('📦 Preparação TikTok concluída')
+console.log(`🧩 Chunks previstos: ${totalChunkCount}`)
+
+const {
+  publishId,
+  uploadUrl,
+} = await inicializarPublicacao({
+  accessToken: conta.access_token,
+  titulo: item.titulo,
+  videoSize: tamanhoBytes,
+  chunkSize,
+  totalChunkCount,
+})
+
+console.log('✅ Sessão de publicação criada')
+console.log(`🆔 Publish ID: ${publishId}`)
+console.log('📤 Upload URL recebida com segurança')
+
+await enviarVideo({
+  uploadUrl,
+  caminhoVideo,
+  videoSize: tamanhoBytes,
+  chunkSize,
+  totalChunkCount,
+})
+
+console.log('✅ Vídeo enviado ao TikTok')
+console.log('⏳ Aguardando processamento do TikTok')
+
+let status = null
+const maxTentativas = 30
+
+for (
+  let tentativa = 1;
+  tentativa <= maxTentativas;
+  tentativa++
+) {
+  const resultadoStatus =
+    await consultarStatus({
+      accessToken: conta.access_token,
+      publishId,
+    })
+
+  status = resultadoStatus.status
+
+  console.log(
+    `📊 Status TikTok (${tentativa}/${maxTentativas}): ${status}`,
+  )
+
+  if (status === 'PUBLISH_COMPLETE') {
+    console.log(
+      '🎉 TikTok confirmou a publicação',
+    )
+
+    break
+  }
+
+  if (status === 'FAILED') {
+    throw new Error(
+      'TikTok informou falha na publicação.',
+    )
+  }
+
+  await new Promise((resolve) =>
+    setTimeout(resolve, 5000),
+  )
+}
+
+if (status !== 'PUBLISH_COMPLETE') {
+  throw new Error(
+    `TikTok não confirmou a publicação no tempo esperado. Último status: ${status}`,
+  )
+}
+return {
+  sucesso: true,
+  plataforma: 'tiktok',
+  publishId,
+  status,
+  publicadoEm: new Date().toISOString(),
+}
 }

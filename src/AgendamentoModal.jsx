@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
-function AgendamentoModal({ video, onFechar, onAgendar }) {
+function AgendamentoModal({ video, onFechar, onAgendar }) { 
+  console.log('🎬 VIDEO RECEBIDO PELO MODAL:', video)
   const [data, setData] = useState('')
   const [hora, setHora] = useState('')
 
@@ -9,6 +10,11 @@ function AgendamentoModal({ video, onFechar, onAgendar }) {
       alert('Escolha a data e a hora.')
       return
     }
+    console.log('📅 DADOS DO MODAL:', {
+  data,
+  hora,
+  caminhoVideo: video.caminhoVideo,
+})
 
     onAgendar({
       id: crypto.randomUUID(),
@@ -17,6 +23,7 @@ function AgendamentoModal({ video, onFechar, onAgendar }) {
       hora,
       status: 'agendado',
       criadoEm: new Date().toISOString(),
+      caminhoVideo: video.caminhoVideo,
     })
   }
 

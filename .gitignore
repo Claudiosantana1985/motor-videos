@@ -30,3 +30,8 @@ dist-ssr
 *.db
 *.db-wal
 *.db-shm
+# Vídeos locais
+videos/
+
+# Arquivos temporários de teste
+teste.txt
