@@ -629,6 +629,34 @@ setInterval(
   10000,
 )
 
+function erroPermiteRetentativa(error) {
+  const statusHttp =
+    error?.statusHttp ?? null
+
+  // Muitas requisições
+  if (statusHttp === 429) {
+    return true
+  }
+
+  // Erros temporários do servidor
+  if (
+    statusHttp >= 500 &&
+    statusHttp <= 599
+  ) {
+    return true
+  }
+
+  // Falhas de rede do fetch/Node
+  if (
+    error instanceof TypeError &&
+    !statusHttp
+  ) {
+    return true
+  }
+
+  return false
+}
+
 async function processarFilaPublicacao() {
   try { 
         if (!PUBLICACAO_REAL_ATIVA) {
@@ -700,6 +728,14 @@ for (const item of itensNaFila) {
   error instanceof Error
     ? error.message
     : String(error)
+    const permiteRetentativa =
+  erroPermiteRetentativa(error)
+
+console.log(
+  permiteRetentativa
+    ? `🔄 Erro temporário detectado: ${item.id}`
+    : `⛔ Erro definitivo detectado: ${item.id}`,
+)
 
 db.prepare(`
   UPDATE agendamentos
