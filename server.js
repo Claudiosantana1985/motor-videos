@@ -7,6 +7,12 @@ import db from './database.js'
 import path from 'path'
 import fs from 'fs'
 import { publicarVideo } from './services/publicador.js'
+import {
+  obterContaTikTok,
+  accessTokenPrecisaRenovar,
+  renovarAccessTokenTikTok,
+  consultarStatus,
+} from './services/tiktok.js'
 
 const PUBLICACAO_REAL_ATIVA =  false
 dotenv.config()
@@ -604,6 +610,21 @@ function verificarAgendamentos() {
     )
   }
 }
+recuperarPublicacoesInterrompidas()
+
+setInterval(
+  recuperarPublicacoesInterrompidas,
+  30000,
+)
+
+verificarAgendamentos()
+
+setInterval(
+  verificarAgendamentos,
+  10000,
+)
+
+recuperarPublicacoesInterrompidas()
 
 verificarAgendamentos()
 
@@ -693,6 +714,118 @@ for (const item of itensNaFila) {
 }
 
 processarFilaPublicacao()
+
+async function recuperarPublicacoesInterrompidas() {
+  try {
+    const publicacoesInterrompidas = db
+      .prepare(`
+        SELECT
+          id,
+          titulo,
+          publish_id AS publishId
+        FROM agendamentos
+        WHERE status = 'publicando'
+      `)
+      .all()
+
+    if (publicacoesInterrompidas.length === 0) {
+      console.log(
+        '✅ Nenhuma publicação interrompida encontrada',
+      )
+      return
+    }
+
+    console.log(
+      `🔎 Publicações interrompidas encontradas: ${publicacoesInterrompidas.length}`,
+    )
+
+    let conta = obterContaTikTok()
+
+    if (accessTokenPrecisaRenovar(conta)) {
+      console.log(
+        '🔄 Renovando token antes da recuperação...',
+      )
+
+      conta =
+        await renovarAccessTokenTikTok(conta)
+    }
+
+    for (const item of publicacoesInterrompidas) {
+      if (!item.publishId) {
+        console.error(
+          `⚠️ ${item.id} está PUBLICANDO, mas não possui publish_id. Não será republicado automaticamente.`,
+        )
+
+        continue
+      }
+
+      try {
+        const resultado =
+          await consultarStatus({
+            accessToken: conta.access_token,
+            publishId: item.publishId,
+          })
+
+        console.log(
+          `🔎 ${item.id} → TikTok: ${resultado.status}`,
+        )
+
+        if (
+          resultado.status ===
+          'PUBLISH_COMPLETE'
+        ) {
+          const publicadoEm =
+            new Date().toISOString()
+
+          db.prepare(`
+            UPDATE agendamentos
+            SET
+              status = 'publicado',
+              publicado_em = ?
+            WHERE id = ?
+          `).run(
+            publicadoEm,
+            item.id,
+          )
+
+          console.log(
+            `✅ Publicação recuperada como PUBLICADO: ${item.id}`,
+          )
+
+          continue
+        }
+
+        if (resultado.status === 'FAILED') {
+          db.prepare(`
+            UPDATE agendamentos
+            SET status = 'erro'
+            WHERE id = ?
+          `).run(item.id)
+
+          console.log(
+            `❌ Publicação recuperada como ERRO: ${item.id}`,
+          )
+
+          continue
+        }
+
+        console.log(
+          `⏳ ${item.id} continua sendo processado pelo TikTok`,
+        )
+      } catch (error) {
+        console.error(
+          `❌ Erro ao recuperar ${item.id}:`,
+          error,
+        )
+      }
+    }
+  } catch (error) {
+    console.error(
+      '❌ Erro na recuperação de publicações:',
+      error,
+    )
+  }
+}
 
 setInterval(
   processarFilaPublicacao,
@@ -995,6 +1128,7 @@ app.get('/api/tiktok/status-teste', async (req, res) => {
     })
   }
 })
+
 
 app.listen(PORT, () => {
   console.log('')

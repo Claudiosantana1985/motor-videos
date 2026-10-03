@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import db from '../database.js'
 import {
   obterContaTikTok,
   accessTokenPrecisaRenovar,
@@ -86,6 +87,18 @@ const {
   chunkSize,
   totalChunkCount,
 })
+db.prepare(`
+  UPDATE agendamentos
+  SET publish_id = ?
+  WHERE id = ?
+`).run(
+  publishId,
+  item.id,
+)
+
+console.log(
+  `💾 Publish ID salvo no banco: ${publishId}`,
+)
 
 console.log('✅ Sessão de publicação criada')
 console.log(`🆔 Publish ID: ${publishId}`)

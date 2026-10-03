@@ -40,6 +40,22 @@ if (!possuiCaminhoVideo) {
     '🗄️ Coluna caminho_video adicionada aos agendamentos',
   )
 }
+
+const possuiPublishId =
+  colunasAgendamentos.some(
+    (coluna) => coluna.name === 'publish_id',
+  )
+
+if (!possuiPublishId) {
+  db.exec(`
+    ALTER TABLE agendamentos
+    ADD COLUMN publish_id TEXT
+  `)
+
+  console.log(
+    '🗄️ Coluna publish_id adicionada aos agendamentos',
+  )
+}
 db.exec(`
   CREATE TABLE IF NOT EXISTS tiktok_contas (
     open_id TEXT PRIMARY KEY,
