@@ -82,9 +82,27 @@ if (!possuiTentativasPublicacao) {
     ALTER TABLE agendamentos
     ADD COLUMN tentativas_publicacao INTEGER NOT NULL DEFAULT 0
   `)
+  
 
   console.log(
     '🗄️ Coluna tentativas_publicacao adicionada aos agendamentos',
+  )
+}
+
+const possuiProximaTentativaEm =
+  colunasAgendamentos.some(
+    (coluna) =>
+      coluna.name === 'proxima_tentativa_em',
+  )
+
+if (!possuiProximaTentativaEm) {
+  db.exec(`
+    ALTER TABLE agendamentos
+    ADD COLUMN proxima_tentativa_em TEXT
+  `)
+
+  console.log(
+    '🗄️ Coluna proxima_tentativa_em adicionada aos agendamentos',
   )
 }
 

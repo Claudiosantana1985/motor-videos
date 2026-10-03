@@ -669,12 +669,22 @@ async function processarFilaPublicacao() {
   titulo,
   caminho_video AS caminhoVideo,
   publish_id AS publishId
+  tentativas_publicacao AS tentativasPublicacao,
+  proxima_tentativa_em AS proximaTentativaEm
 FROM agendamentos
 WHERE status = 'na-fila'
   `)
   .all()
+  const MAX_TENTATIVAS_PUBLICACAO = 3
 for (const item of itensNaFila) {
-  try {
+  try { if (item.proximaTentativaEm) {
+  const proximaTentativa =
+    new Date(item.proximaTentativaEm)
+
+  if (proximaTentativa > new Date()) {
+    continue
+  }
+}
     const alteracao = db.prepare(`
   UPDATE agendamentos
   SET
@@ -730,6 +740,9 @@ for (const item of itensNaFila) {
     : String(error)
     const permiteRetentativa =
   erroPermiteRetentativa(error)
+  const atingiuLimiteTentativas =
+  item.tentativasPublicacao + 1 >=
+  MAX_TENTATIVAS_PUBLICACAO
 
 console.log(
   permiteRetentativa
@@ -737,16 +750,48 @@ console.log(
     : `⛔ Erro definitivo detectado: ${item.id}`,
 )
 
-db.prepare(`
-  UPDATE agendamentos
-  SET
-    status = 'erro',
-    ultimo_erro = ?
-  WHERE id = ?
-`).run(
-  mensagemErro,
-  item.id,
-)
+if (
+  permiteRetentativa &&
+  !atingiuLimiteTentativas
+) {
+  const proximaTentativaEm =
+    new Date(
+      Date.now() + 60 * 1000,
+    ).toISOString()
+
+  db.prepare(`
+    UPDATE agendamentos
+    SET
+      status = 'na-fila',
+      ultimo_erro = ?,
+      proxima_tentativa_em = ?
+    WHERE id = ?
+  `).run(
+    mensagemErro,
+    proximaTentativaEm,
+    item.id,
+  )
+
+  console.log(
+    `🔄 Nova tentativa agendada para: ${proximaTentativaEm}`,
+  )
+} else {
+  db.prepare(`
+    UPDATE agendamentos
+    SET
+      status = 'erro',
+      ultimo_erro = ?,
+      proxima_tentativa_em = NULL
+    WHERE id = ?
+  `).run(
+    mensagemErro,
+    item.id,
+  )
+
+  console.log(
+    `⛔ Publicação encerrada com erro: ${item.id}`,
+  )
+}
 
   console.log(
     `⚠️ Publicação marcada como ERRO: ${item.id}`,
