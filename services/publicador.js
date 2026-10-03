@@ -68,8 +68,39 @@ if (accessTokenPrecisaRenovar(conta)) {
   )
 }
 if (item.publishId) {
+  console.log(
+    `🔎 Agendamento já possui publish_id: ${item.publishId}`,
+  )
+
+  console.log(
+    '🛡️ Nova publicação bloqueada. Consultando publicação existente...',
+  )
+
+  const resultadoExistente =
+    await consultarStatus({
+      accessToken: conta.access_token,
+      publishId: item.publishId,
+    })
+
+  console.log(
+    `📊 Status da publicação existente: ${resultadoExistente.status}`,
+  )
+
+  if (
+    resultadoExistente.status ===
+    'PUBLISH_COMPLETE'
+  ) {
+    return {
+      sucesso: true,
+      plataforma: 'tiktok',
+      publishId: item.publishId,
+      status: resultadoExistente.status,
+      publicadoEm: new Date().toISOString(),
+    }
+  }
+
   throw new Error(
-    `Agendamento ${item.id} já possui publish_id (${item.publishId}). Nova publicação bloqueada por segurança.`,
+    `Publicação existente não será reenviada. Status TikTok: ${resultadoExistente.status}`,
   )
 }
 
