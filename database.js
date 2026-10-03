@@ -56,6 +56,21 @@ if (!possuiPublishId) {
     '🗄️ Coluna publish_id adicionada aos agendamentos',
   )
 }
+const possuiUltimoErro =
+  colunasAgendamentos.some(
+    (coluna) => coluna.name === 'ultimo_erro',
+  )
+
+if (!possuiUltimoErro) {
+  db.exec(`
+    ALTER TABLE agendamentos
+    ADD COLUMN ultimo_erro TEXT
+  `)
+
+  console.log(
+    '🗄️ Coluna ultimo_erro adicionada aos agendamentos',
+  )
+}
 db.exec(`
   CREATE TABLE IF NOT EXISTS tiktok_contas (
     open_id TEXT PRIMARY KEY,

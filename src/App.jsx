@@ -663,23 +663,23 @@ const totalPublicados = agendamentos.filter(
   </button>
 )}
 
-{agendamento.status === 'na-fila' && (
-  <button
-    onClick={() =>
-      atualizarStatusAgendamento(
-        agendamento.id,
-        'publicado',
-      )
-    }
-  >
-    ✅ Simular publicação
-  </button>
-)}
 
 {agendamento.status === 'publicado' && (
   <button disabled>
     ✅ Publicado
   </button>
+)}
+
+{agendamento.status === 'erro' && (
+  <div className="erroPublicacao">
+    <strong>❌ Erro na publicação</strong>
+
+    {agendamento.ultimoErro && (
+      <small>
+        {agendamento.ultimoErro}
+      </small>
+    )}
+  </div>
 )}
 
             </div>

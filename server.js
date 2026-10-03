@@ -478,6 +478,7 @@ app.get('/api/agendamentos', (req, res) => {
       criadoEm: registro.criado_em,
       publicadoEm: registro.publicado_em,
       caminhoVideo: registro.caminho_video,
+      ultimoErro: registro.ultimo_erro,
     }))
 
     res.json({
@@ -650,11 +651,13 @@ async function processarFilaPublicacao() {
 for (const item of itensNaFila) {
   try {
     const alteracao = db.prepare(`
-      UPDATE agendamentos
-      SET status = 'publicando'
-      WHERE id = ?
-        AND status = 'na-fila'
-    `).run(item.id)
+  UPDATE agendamentos
+  SET
+    status = 'publicando',
+    ultimo_erro = NULL
+  WHERE id = ?
+    AND status = 'na-fila'
+`).run(item.id)
 
     if (alteracao.changes === 0) {
       continue
@@ -694,11 +697,21 @@ for (const item of itensNaFila) {
     error,
   )
 
-  db.prepare(`
-    UPDATE agendamentos
-    SET status = 'erro'
-    WHERE id = ?
-  `).run(item.id)
+  const mensagemErro =
+  error instanceof Error
+    ? error.message
+    : String(error)
+
+db.prepare(`
+  UPDATE agendamentos
+  SET
+    status = 'erro',
+    ultimo_erro = ?
+  WHERE id = ?
+`).run(
+  mensagemErro,
+  item.id,
+)
 
   console.log(
     `⚠️ Publicação marcada como ERRO: ${item.id}`,
