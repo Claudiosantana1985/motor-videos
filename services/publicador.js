@@ -3,6 +3,8 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import {
   obterContaTikTok,
+  accessTokenPrecisaRenovar,
+  renovarAccessTokenTikTok,
   inicializarPublicacao,
   enviarVideo,
   consultarStatus,
@@ -44,9 +46,26 @@ const caminhoVideo = path.resolve(
   console.log(`📦 Tamanho: ${tamanhoBytes} bytes`)
   console.log(`📦 Aproximadamente: ${tamanhoMB.toFixed(2)} MB`)
 
-  const conta = obterContaTikTok()
+  let conta = obterContaTikTok()
 
 console.log('🔐 Conta TikTok carregada')
+
+if (accessTokenPrecisaRenovar(conta)) {
+  console.log(
+    '🔄 Access token próximo da expiração. Renovando...',
+  )
+
+  conta =
+    await renovarAccessTokenTikTok(conta)
+
+  console.log(
+    '✅ Access token do TikTok atualizado',
+  )
+} else {
+  console.log(
+    '✅ Access token do TikTok ainda é válido',
+  )
+}
 
 const chunkSize = 10_000_000
 

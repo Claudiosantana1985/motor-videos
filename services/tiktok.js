@@ -23,6 +23,141 @@ export function obterContaTikTok() {
 
   return conta
 }
+export function accessTokenPrecisaRenovar(conta) {
+  if (!conta?.access_expires_at) {
+    return true
+  }
+
+  const agora = Date.now()
+
+  const expiracao = new Date(
+    conta.access_expires_at,
+  ).getTime()
+
+  if (Number.isNaN(expiracao)) {
+    return true
+  }
+
+  // Margem de segurança de 5 minutos
+  const margemSeguranca =
+    5 * 60 * 1000
+
+  return (
+    expiracao - agora <= margemSeguranca
+  )
+} 
+
+export async function renovarAccessTokenTikTok(conta) {
+  if (!conta?.refresh_token) {
+    throw new Error(
+      'Refresh token do TikTok não encontrado.',
+    )
+  }
+
+  if (conta.refresh_expires_at) {
+  const expiracaoRefresh = new Date(
+    conta.refresh_expires_at,
+  ).getTime()
+
+  if (
+    Number.isNaN(expiracaoRefresh) ||
+    expiracaoRefresh <= Date.now()
+  ) {
+    throw new Error(
+      'Refresh token do TikTok expirado. É necessário conectar a conta novamente.',
+    )
+  }
+}
+
+  const clientKey =
+    process.env.TIKTOK_CLIENT_KEY
+
+  const clientSecret =
+    process.env.TIKTOK_CLIENT_SECRET
+
+  if (!clientKey || !clientSecret) {
+    throw new Error(
+      'Credenciais do TikTok não configuradas.',
+    )
+  }
+
+  const body = new URLSearchParams({
+    client_key: clientKey,
+    client_secret: clientSecret,
+    grant_type: 'refresh_token',
+    refresh_token: conta.refresh_token,
+  })
+
+  const response = await fetch(
+    'https://open.tiktokapis.com/v2/oauth/token/',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type':
+          'application/x-www-form-urlencoded',
+      },
+      body,
+    },
+  )
+
+  const dados = await response.json()
+
+  if (!response.ok || !dados.access_token) {
+    console.error(
+      '❌ Erro ao renovar token TikTok:',
+      dados,
+    )
+
+    throw new Error(
+      dados.error_description ||
+        dados.error ||
+        'Erro ao renovar token do TikTok.',
+    )
+  }
+
+  const agora = Date.now()
+
+  const accessExpiresAt = new Date(
+    agora + dados.expires_in * 1000,
+  ).toISOString()
+
+  const refreshExpiresAt = new Date(
+    agora + dados.refresh_expires_in * 1000,
+  ).toISOString()
+
+  db.prepare(`
+    UPDATE tiktok_contas
+    SET
+      access_token = ?,
+      refresh_token = ?,
+      access_expires_at = ?,
+      refresh_expires_at = ?,
+      scope = ?,
+      atualizado_em = ?
+    WHERE open_id = ?
+  `).run(
+    dados.access_token,
+    dados.refresh_token,
+    accessExpiresAt,
+    refreshExpiresAt,
+    dados.scope || conta.scope,
+    new Date().toISOString(),
+    conta.open_id,
+  )
+
+  console.log(
+    '🔄 Access token do TikTok renovado.',
+  )
+
+  return {
+    ...conta,
+    access_token: dados.access_token,
+    refresh_token: dados.refresh_token,
+    access_expires_at: accessExpiresAt,
+    refresh_expires_at: refreshExpiresAt,
+    scope: dados.scope || conta.scope,
+  }
+}
 export async function inicializarPublicacao({
   accessToken,
   titulo,

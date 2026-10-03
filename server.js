@@ -123,6 +123,47 @@ app.get('/auth/tiktok', (req, res) => {
   res.redirect(urlAutorizacao)
 })
 
+// Rota para verificar status dos tokens do TikTok
+
+app.get('/api/tiktok/token-status', (req, res) => {
+  try {
+    const conta = db
+      .prepare(`
+        SELECT
+          open_id,
+          access_expires_at,
+          refresh_expires_at
+        FROM tiktok_contas
+        LIMIT 1
+      `)
+      .get()
+
+    if (!conta) {
+      return res.status(404).json({
+        error: 'Nenhuma conta TikTok conectada.',
+      })
+    }
+
+    res.json({
+      accessExpiresAt:
+        conta.access_expires_at,
+      refreshExpiresAt:
+        conta.refresh_expires_at,
+      agora: new Date().toISOString(),
+    })
+  } catch (error) {
+    console.error(
+      'Erro ao consultar tokens:',
+      error,
+    )
+
+    res.status(500).json({
+      error:
+        'Erro ao consultar status dos tokens.',
+    })
+  }
+})
+
 // Recebe o retorno do TikTok
 app.get('/auth/tiktok/callback', async (req, res) => {
   const {
