@@ -637,11 +637,12 @@ async function processarFilaPublicacao() {
     const itensNaFila = db
   .prepare(`
     SELECT
-      id,
-      titulo,
-      caminho_video AS caminhoVideo
-    FROM agendamentos
-    WHERE status = 'na-fila'
+  id,
+  titulo,
+  caminho_video AS caminhoVideo,
+  publish_id AS publishId
+FROM agendamentos
+WHERE status = 'na-fila'
   `)
   .all()
 for (const item of itensNaFila) {

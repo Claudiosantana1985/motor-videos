@@ -67,6 +67,11 @@ if (accessTokenPrecisaRenovar(conta)) {
     '✅ Access token do TikTok ainda é válido',
   )
 }
+if (item.publishId) {
+  throw new Error(
+    `Agendamento ${item.id} já possui publish_id (${item.publishId}). Nova publicação bloqueada por segurança.`,
+  )
+}
 
 const chunkSize = 10_000_000
 
