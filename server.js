@@ -616,6 +616,7 @@ function verificarAgendamentos() {
 }
 recuperarPublicacoesInterrompidas()
 
+
 setInterval(
   recuperarPublicacoesInterrompidas,
   30000,
@@ -628,14 +629,6 @@ setInterval(
   10000,
 )
 
-recuperarPublicacoesInterrompidas()
-
-verificarAgendamentos()
-
-setInterval(
-  verificarAgendamentos,
-  10000,
-) 
 async function processarFilaPublicacao() {
   try { 
         if (!PUBLICACAO_REAL_ATIVA) {

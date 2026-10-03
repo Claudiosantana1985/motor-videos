@@ -203,10 +203,21 @@ export async function inicializarPublicacao({
       data?.error,
     )
 
-    throw new Error(
-      data?.error?.message ||
-        'TikTok recusou a inicialização da publicação.',
-    )
+    const erro = new Error(
+  data?.error?.message ||
+    'TikTok recusou a inicialização da publicação.',
+)
+
+erro.codigoTikTok =
+  data?.error?.code || null
+
+erro.statusHttp =
+  response.status
+
+erro.etapa =
+  'inicializacao'
+
+throw erro
   }
 
   if (!data?.data?.publish_id) {
@@ -216,9 +227,17 @@ export async function inicializarPublicacao({
   }
 
   if (!data?.data?.upload_url) {
-    throw new Error(
-      'TikTok não retornou upload_url.',
-    )
+    const erroUpload = new Error(
+  `Erro no upload TikTok. HTTP ${response.status}`,
+)
+
+erroUpload.statusHttp =
+  response.status
+
+erroUpload.etapa =
+  'upload'
+
+throw erroUpload
   }
 
   console.log('✅ Publicação inicializada no TikTok')
@@ -261,10 +280,21 @@ export async function consultarStatus({
       data?.error,
     )
 
-    throw new Error(
-      data?.error?.message ||
-        'Erro ao consultar status da publicação.',
-    )
+    const erro = new Error(
+  data?.error?.message ||
+    'Erro ao consultar status da publicação.',
+)
+
+erro.codigoTikTok =
+  data?.error?.code || null
+
+erro.statusHttp =
+  response.status
+
+erro.etapa =
+  'consulta-status'
+
+throw erro
   }
 
   if (!data?.data?.status) {
