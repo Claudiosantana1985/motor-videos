@@ -450,6 +450,7 @@ app.get('/api/videos', (req, res) => {
     })
   }
 })
+
 app.get('/api/agendamentos', (req, res) => {
   try {
     const registros = db
@@ -479,6 +480,8 @@ app.get('/api/agendamentos', (req, res) => {
       publicadoEm: registro.publicado_em,
       caminhoVideo: registro.caminho_video,
       ultimoErro: registro.ultimo_erro,
+      tentativasPublicacao:
+        registro.tentativas_publicacao,
     }))
 
     res.json({
@@ -654,7 +657,9 @@ for (const item of itensNaFila) {
   UPDATE agendamentos
   SET
     status = 'publicando',
-    ultimo_erro = NULL
+    ultimo_erro = NULL,
+    tentativas_publicacao =
+      tentativas_publicacao + 1
   WHERE id = ?
     AND status = 'na-fila'
 `).run(item.id)
@@ -716,6 +721,7 @@ db.prepare(`
   console.log(
     `⚠️ Publicação marcada como ERRO: ${item.id}`,
   )
+
 }
     }
   } catch (error) {
@@ -725,6 +731,7 @@ db.prepare(`
     )
   }
 }
+
 
 processarFilaPublicacao()
 

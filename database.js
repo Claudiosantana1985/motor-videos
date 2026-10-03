@@ -71,6 +71,23 @@ if (!possuiUltimoErro) {
     '🗄️ Coluna ultimo_erro adicionada aos agendamentos',
   )
 }
+const possuiTentativasPublicacao =
+  colunasAgendamentos.some(
+    (coluna) =>
+      coluna.name === 'tentativas_publicacao',
+  )
+
+if (!possuiTentativasPublicacao) {
+  db.exec(`
+    ALTER TABLE agendamentos
+    ADD COLUMN tentativas_publicacao INTEGER NOT NULL DEFAULT 0
+  `)
+
+  console.log(
+    '🗄️ Coluna tentativas_publicacao adicionada aos agendamentos',
+  )
+}
+
 db.exec(`
   CREATE TABLE IF NOT EXISTS tiktok_contas (
     open_id TEXT PRIMARY KEY,
@@ -81,7 +98,7 @@ db.exec(`
     scope TEXT,
     atualizado_em TEXT NOT NULL
   )
-`)
+`) 
 console.log('🗄️ Banco SQLite iniciado')
 
 export default db
