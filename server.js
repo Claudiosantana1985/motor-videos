@@ -576,7 +576,7 @@ function verificarAgendamentos() {
     // Trava geral de segurança
     if (!PUBLICACAO_REAL_ATIVA) {
       return
-    }
+     }
 
     const agora = new Date()
 
@@ -659,16 +659,16 @@ function erroPermiteRetentativa(error) {
 
 async function processarFilaPublicacao() {
   try { 
-        if (!PUBLICACAO_REAL_ATIVA) {
+    if (!PUBLICACAO_REAL_ATIVA) {
       return
-    }
+   }
     const itensNaFila = db
   .prepare(`
     SELECT
   id,
   titulo,
   caminho_video AS caminhoVideo,
-  publish_id AS publishId
+  publish_id AS publishId,
   tentativas_publicacao AS tentativasPublicacao,
   proxima_tentativa_em AS proximaTentativaEm
 FROM agendamentos
@@ -793,9 +793,6 @@ if (
   )
 }
 
-  console.log(
-    `⚠️ Publicação marcada como ERRO: ${item.id}`,
-  )
 
 }
     }
