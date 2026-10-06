@@ -7,11 +7,13 @@ import db from './database.js'
 import path from 'path'
 import fs from 'fs'
 import { publicarVideo } from './services/publicador.js'
+import { obterDuracaoVideo } from './services/video.js'
 import {
   obterContaTikTok,
   accessTokenPrecisaRenovar,
   renovarAccessTokenTikTok,
   consultarStatus,
+  obterCreatorInfo,
 } from './services/tiktok.js'
 
 const PUBLICACAO_REAL_ATIVA =  false
@@ -300,7 +302,7 @@ res.send(
   )
 }
 })
-app.post('/api/agendamentos', (req, res) => {
+app.post('/api/agendamentos', async (req, res) => {
   try {
     const agendamento = req.body
 
@@ -317,7 +319,108 @@ app.post('/api/agendamentos', (req, res) => {
         error: 'Dados do agendamento incompletos.',
       })
     }
+    if (agendamento.confirmouPublicacao !== true) {
+  return res.status(400).json({
+    error:
+      'É necessário confirmar a autorização de publicação.',
+  })
+}
+    const configuracoesBooleanasTikTok = [
+  'permitirComentarios',
+  'permitirDueto',
+  'permitirStitch',
+]
 
+for (const campo of configuracoesBooleanasTikTok) {
+  if (
+    typeof agendamento.tiktok?.[campo] !==
+    'boolean'
+  ) {
+    return res.status(400).json({
+      error:
+        'Configurações de interação do TikTok inválidas.',
+    })
+  }
+}
+    const privacidadesTikTokPermitidas = [
+  'PUBLIC_TO_EVERYONE',
+  'FOLLOWER_OF_CREATOR',
+  'MUTUAL_FOLLOW_FRIENDS',
+  'SELF_ONLY',
+]
+
+if (
+  !agendamento.tiktok?.privacidade ||
+  !privacidadesTikTokPermitidas.includes(
+    agendamento.tiktok.privacidade,
+  )
+) {
+  return res.status(400).json({
+    error:
+      'Configuração de privacidade do TikTok inválida.',
+  })
+}
+
+let contaTikTok = obterContaTikTok()
+
+if (!contaTikTok) {
+  return res.status(400).json({
+    error: 'Nenhuma conta TikTok conectada.',
+  })
+}
+
+if (accessTokenPrecisaRenovar(contaTikTok)) {
+  console.log(
+    '🔄 Renovando token TikTok antes de validar agendamento...',
+  )
+
+  contaTikTok =
+    await renovarAccessTokenTikTok(contaTikTok)
+}
+
+const creator = await obterCreatorInfo({
+  accessToken: contaTikTok.access_token,
+})
+
+if (
+  !creator.privacyLevels.includes(
+    agendamento.tiktok.privacidade,
+  )
+) {
+  return res.status(400).json({
+    error:
+      'A privacidade selecionada não está disponível para esta conta TikTok.',
+  })
+}
+if (
+  creator.commentsDisabled &&
+  agendamento.tiktok.permitirComentarios
+) {
+  return res.status(400).json({
+    error:
+      'Comentários não estão disponíveis para esta conta TikTok.',
+  })
+}
+
+if (
+  creator.duetDisabled &&
+  agendamento.tiktok.permitirDueto
+) {
+  return res.status(400).json({
+    error:
+      'Dueto não está disponível para esta conta TikTok.',
+  })
+}
+
+if (
+  creator.stitchDisabled &&
+  agendamento.tiktok.permitirStitch
+) {
+  return res.status(400).json({
+    error:
+      'Stitch não está disponível para esta conta TikTok.',
+  })
+}
     // 2. Validação da data e hora
     const dataAgendada = new Date(
       `${agendamento.data}T${agendamento.hora}`,
@@ -328,6 +431,7 @@ app.post('/api/agendamentos', (req, res) => {
         error: 'Data ou hora inválida.',
       })
     }
+    
 
     // 3. Impede agendamento no passado
     const agora = new Date()
@@ -357,42 +461,73 @@ if (dataAgendada < horarioMinimo) {
         error: 'Arquivo de vídeo não encontrado.',
       })
     }
+    const duracaoVideo = await obterDuracaoVideo(
+  caminhoCompleto,
+)
 
-    // 5. Salva somente depois de todas as validações
-    const comando = db.prepare(`
-      INSERT INTO agendamentos (
-        id,
-        video_id,
-        titulo,
-        canal,
-        thumbnail,
-        url,
-        fonte,
-        data,
-        hora,
-        status,
-        criado_em,
-        publicado_em,
-        caminho_video
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `)
+if (
+  creator.maxVideoDuration &&
+  duracaoVideo > creator.maxVideoDuration
+) {
+  return res.status(400).json({
+    error:
+      `O vídeo possui ${Math.ceil(duracaoVideo)} segundos, ` +
+      `mas o TikTok permite no máximo ${creator.maxVideoDuration} segundos.`,
+  })
+}
 
-    comando.run(
-      agendamento.id,
-      agendamento.video.id,
-      agendamento.video.titulo,
-      agendamento.video.canal || null,
-      agendamento.video.thumbnail || null,
-      agendamento.video.url || null,
-      agendamento.video.fonte || null,
-      agendamento.data,
-      agendamento.hora,
-      agendamento.status || 'agendado',
-      agendamento.criadoEm || new Date().toISOString(),
-      null,
-      agendamento.caminhoVideo,
-    )
+    // 5. Salva o agendamento no banco
+
+ const comando = db.prepare(`
+  INSERT INTO agendamentos (
+    id,
+    video_id,
+    titulo,
+    canal,
+    thumbnail,
+    url,
+    fonte,
+    data,
+    hora,
+    status,
+    criado_em,
+    publicado_em,
+    caminho_video,
+    tiktok_username,
+    tiktok_privacidade,
+    tiktok_permitir_comentarios,
+    tiktok_permitir_dueto,
+    tiktok_permitir_stitch,
+    confirmou_publicacao
+  )
+  VALUES (
+    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+    ?, ?, ?, ?, ?, ?, ?, ?, ?
+  )
+`)
+
+comando.run(
+  agendamento.id,
+  agendamento.video.id,
+  agendamento.video.titulo,
+  agendamento.video.canal || null,
+  agendamento.video.thumbnail || null,
+  agendamento.video.url || null,
+  agendamento.video.fonte || null,
+  agendamento.data,
+  agendamento.hora,
+  agendamento.status || 'agendado',
+  agendamento.criadoEm || new Date().toISOString(),
+  null,
+  agendamento.caminhoVideo,
+
+  agendamento.tiktok?.username || null,
+  agendamento.tiktok?.privacidade || null,
+  agendamento.tiktok?.permitirComentarios ? 1 : 0,
+  agendamento.tiktok?.permitirDueto ? 1 : 0,
+  agendamento.tiktok?.permitirStitch ? 1 : 0,
+  agendamento.confirmouPublicacao ? 1 : 0,
+)
 
     res.status(201).json({
       mensagem: 'Agendamento salvo.',
@@ -410,7 +545,7 @@ if (dataAgendada < horarioMinimo) {
   }
 })
 
-app.get('/api/videos', (req, res) => {
+app.get('/api/videos', async (req, res) => {
   try {
     const pastaVideos = path.resolve('videos')
 
@@ -422,18 +557,32 @@ app.get('/api/videos', (req, res) => {
       '.webm',
     ]
 
-    const videos = arquivos
-      .filter((arquivo) => {
-        const extensao = path
-          .extname(arquivo)
-          .toLowerCase()
+    const arquivosVideos = arquivos.filter((arquivo) => {
+  const extensao = path
+    .extname(arquivo)
+    .toLowerCase()
 
-        return extensoesPermitidas.includes(extensao)
-      })
-      .map((arquivo) => ({
-        nomeArquivo: arquivo,
-        caminhoVideo: `videos/${arquivo}`,
-      }))
+  return extensoesPermitidas.includes(extensao)
+})
+
+const videos = await Promise.all(
+  arquivosVideos.map(async (arquivo) => {
+    const caminhoCompleto = path.join(
+      pastaVideos,
+      arquivo,
+    )
+
+    const duracao = await obterDuracaoVideo(
+      caminhoCompleto,
+    )
+
+    return {
+      nomeArquivo: arquivo,
+      caminhoVideo: `videos/${arquivo}`,
+      duracao,
+    }
+  }),
+)
 
     res.json({
       total: videos.length,
@@ -664,13 +813,17 @@ async function processarFilaPublicacao() {
    }
     const itensNaFila = db
   .prepare(`
-    SELECT
+  SELECT
   id,
   titulo,
   caminho_video AS caminhoVideo,
   publish_id AS publishId,
   tentativas_publicacao AS tentativasPublicacao,
-  proxima_tentativa_em AS proximaTentativaEm
+  proxima_tentativa_em AS proximaTentativaEm,
+  tiktok_privacidade AS tiktokPrivacidade,
+  tiktok_permitir_comentarios AS tiktokPermitirComentarios,
+  tiktok_permitir_dueto AS tiktokPermitirDueto,
+  tiktok_permitir_stitch AS tiktokPermitirStitch
 FROM agendamentos
 WHERE status = 'na-fila'
   `)
@@ -925,63 +1078,31 @@ setInterval(
 )
 app.get('/api/tiktok/creator-info', async (req, res) => {
   try {
-    const conta = db
-      .prepare(`
-        SELECT access_token
-        FROM tiktok_contas
-        LIMIT 1
-      `)
-      .get()
+    let conta = obterContaTikTok()
 
     if (!conta) {
-      return res.status(404).json({
-        error: 'Nenhuma conta TikTok conectada.',
-      })
-    }
+     return res.status(404).json({
+       error: 'Nenhuma conta TikTok conectada.',
+     })
+}
 
-    const response = await fetch(
-      'https://open.tiktokapis.com/v2/post/publish/creator_info/query/',
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${conta.access_token}`,
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-      },
-    )
+if (accessTokenPrecisaRenovar(conta)) {
+  console.log(
+    '🔄 Renovando token TikTok antes do Creator Info...',
+  )
 
-    const data = await response.json()
+  conta = await renovarAccessTokenTikTok(conta)
+}
 
-    if (!response.ok || data?.error?.code !== 'ok') {
-      console.error(
-        '❌ Erro ao consultar creator info:',
-        data?.error,
-      )
+    const creator = await obterCreatorInfo({
+  accessToken: conta.access_token,
+})
 
-      return res.status(502).json({
-        error: 'Erro ao consultar conta TikTok.',
-        tiktok: data?.error,
-      })
-    }
+console.log('✅ Creator Info recebido do TikTok')
 
-    console.log('✅ Creator Info recebido do TikTok')
-
-    res.json({
-      creator: {
-        username: data.data.creator_username,
-        nickname: data.data.creator_nickname,
-        privacyLevels:
-          data.data.privacy_level_options,
-        commentsDisabled:
-          data.data.comment_disabled,
-        duetDisabled:
-          data.data.duet_disabled,
-        stitchDisabled:
-          data.data.stitch_disabled,
-        maxVideoDuration:
-          data.data.max_video_post_duration_sec,
-      },
-    })
+res.json({
+  creator,
+})
   } catch (error) {
     console.error(
       '❌ Erro ao consultar TikTok:',

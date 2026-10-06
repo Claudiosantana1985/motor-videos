@@ -531,6 +531,7 @@ const totalPublicados = agendamentos.filter(
                     fonte: 'local',
                     caminhoVideo:
                       video.caminhoVideo,
+                      duracao: video.duracao,
                   })
                 }
               >

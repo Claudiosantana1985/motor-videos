@@ -2,6 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import db from '../database.js'
+import { obterDuracaoVideo } from './video.js'
 import {
   obterContaTikTok,
   accessTokenPrecisaRenovar,
@@ -9,6 +10,7 @@ import {
   inicializarPublicacao,
   enviarVideo,
   consultarStatus,
+  obterCreatorInfo,
 } from './tiktok.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -19,6 +21,12 @@ export async function publicarVideo(item) {
   console.log('🚀 Iniciando publicação')
   console.log(`🎬 Vídeo: ${item.titulo}`)
   console.log(`🆔 Agendamento: ${item.id}`)
+
+  if (!item.tiktokPrivacidade) {
+  throw new Error(
+    `Agendamento ${item.id} não possui configuração de privacidade do TikTok.`,
+  )
+}
 
   if (!item.caminhoVideo) {
   throw new Error(
@@ -42,6 +50,9 @@ const caminhoVideo = path.resolve(
 
   const tamanhoBytes = informacoes.size
   const tamanhoMB = tamanhoBytes / 1024 / 1024
+  const duracaoVideo = await obterDuracaoVideo(
+  caminhoVideo,
+  )
 
   console.log('📁 Arquivo encontrado')
   console.log(`📦 Tamanho: ${tamanhoBytes} bytes`)
@@ -67,6 +78,58 @@ if (accessTokenPrecisaRenovar(conta)) {
     '✅ Access token do TikTok ainda é válido',
   )
 }
+const creator = await obterCreatorInfo({
+  accessToken: conta.access_token,
+})
+if (
+  creator.maxVideoDuration &&
+  duracaoVideo > creator.maxVideoDuration
+) {
+  throw new Error(
+    `O vídeo possui ${Math.ceil(duracaoVideo)} segundos, mas o TikTok permite no máximo ${creator.maxVideoDuration} segundos.`,
+  )
+}
+
+if (
+  !creator.privacyLevels.includes(
+    item.tiktokPrivacidade,
+  )
+) {
+  throw new Error(
+    'A privacidade agendada não está mais disponível para esta conta TikTok.',
+  )
+}
+
+if (
+  creator.commentsDisabled &&
+  Boolean(item.tiktokPermitirComentarios)
+) {
+  throw new Error(
+    'Comentários não estão mais disponíveis para esta conta TikTok.',
+  )
+}
+
+if (
+  creator.duetDisabled &&
+  Boolean(item.tiktokPermitirDueto)
+) {
+  throw new Error(
+    'Dueto não está mais disponível para esta conta TikTok.',
+  )
+}
+
+if (
+  creator.stitchDisabled &&
+  Boolean(item.tiktokPermitirStitch)
+) {
+  throw new Error(
+    'Stitch não está mais disponível para esta conta TikTok.',
+  )
+}
+
+console.log(
+  '✅ Configurações TikTok revalidadas antes da publicação',
+)
 if (item.publishId) {
   console.log(
     `🔎 Agendamento já possui publish_id: ${item.publishId}`,
@@ -122,6 +185,17 @@ const {
   videoSize: tamanhoBytes,
   chunkSize,
   totalChunkCount,
+
+  privacidade: item.tiktokPrivacidade,
+
+  permitirComentarios:
+    Boolean(item.tiktokPermitirComentarios),
+
+  permitirDueto:
+    Boolean(item.tiktokPermitirDueto),
+
+  permitirStitch:
+    Boolean(item.tiktokPermitirStitch),
 })
 db.prepare(`
   UPDATE agendamentos

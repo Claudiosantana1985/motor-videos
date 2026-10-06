@@ -65,6 +65,38 @@ button {
   color: #70798b;
   font-size: 11px;
 }
+.tiktokContaInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.tiktokNickname {
+  font-weight: 600;
+}
+
+.tiktokUsername {
+  opacity: 0.75;
+}
+
+.resumoPublicacao {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 16px;
+
+  margin-top: 12px;
+  padding: 12px;
+
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid #293246;
+  border-radius: 10px;
+}
+
+.resumoPublicacao strong {
+  grid-column: 1 / -1;
+  margin-bottom: 2px;
+}
 
 nav {
   display: flex;
@@ -305,6 +337,7 @@ header p {
   background: rgba(255, 255, 255, 0.12);
   border-radius: 50%;
 }
+/* BOTÃO DE PLAY SOBRE O THUMBNAIL */
 
 .thumbnail small {
   position: absolute;
@@ -377,7 +410,7 @@ header p {
     grid-template-columns: 1fr 1fr;
   }
 }
-
+/* MOBILE */
 @media (max-width: 600px) {
   header {
     flex-direction: column;
@@ -402,7 +435,7 @@ header p {
   height: 100%;
   object-fit: cover;
 }
-
+/* BOTÃO DE PLAY SOBRE O THUMBNAIL */
 .playButton {
   position: absolute;
   left: 50%;
@@ -448,7 +481,11 @@ header p {
 
 .modalAgendamento {
   width: 100%;
-  max-width: 520px;
+  max-width: 760px;
+  
+  max-height: calc(100vh - 40px);
+  overflow-y: auto; 
+  overscroll-behavior: contain;
 
   padding: 25px;
 
@@ -458,6 +495,15 @@ header p {
 
   box-shadow: 0 25px 80px rgba(0, 0, 0, 0.55);
 }
+/* MODAL DE AGENDAMENTO */
+
+.avisoConsentimento {
+  display: block;
+  margin-top: 8px;
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+/* MODAL DE AGENDAMENTO */
 
 .modalHeader {
   display: flex;

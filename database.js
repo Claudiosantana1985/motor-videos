@@ -106,6 +106,52 @@ if (!possuiProximaTentativaEm) {
   )
 }
 
+const colunasTikTokAgendamento = [
+  {
+    nome: 'tiktok_username',
+    tipo: 'TEXT',
+  },
+  {
+    nome: 'tiktok_privacidade',
+    tipo: 'TEXT',
+  },
+  {
+    nome: 'tiktok_permitir_comentarios',
+    tipo: 'INTEGER',
+  },
+  {
+    nome: 'tiktok_permitir_dueto',
+    tipo: 'INTEGER',
+  },
+  {
+    nome: 'tiktok_permitir_stitch',
+    tipo: 'INTEGER',
+  },
+  {
+  nome: 'confirmou_publicacao',
+  tipo: 'INTEGER',
+  },
+]
+
+for (const colunaTikTok of colunasTikTokAgendamento) {
+  const existe =
+    colunasAgendamentos.some(
+      (coluna) =>
+        coluna.name === colunaTikTok.nome,
+    )
+
+  if (!existe) {
+    db.exec(`
+      ALTER TABLE agendamentos
+      ADD COLUMN ${colunaTikTok.nome} ${colunaTikTok.tipo}
+    `)
+
+    console.log(
+      `🗄️ Coluna ${colunaTikTok.nome} adicionada aos agendamentos`,
+    )
+  }
+}
+
 db.exec(`
   CREATE TABLE IF NOT EXISTS tiktok_contas (
     open_id TEXT PRIMARY KEY,

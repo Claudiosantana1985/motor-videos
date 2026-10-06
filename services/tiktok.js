@@ -158,12 +158,63 @@ export async function renovarAccessTokenTikTok(conta) {
     scope: dados.scope || conta.scope,
   }
 }
+export async function obterCreatorInfo({
+  accessToken,
+}) {
+  const response = await fetch(
+    'https://open.tiktokapis.com/v2/post/publish/creator_info/query/',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type':
+          'application/json; charset=UTF-8',
+      },
+    },
+  )
+
+  const data = await response.json()
+
+  if (!response.ok || data?.error?.code !== 'ok') {
+    const erro = new Error(
+      data?.error?.message ||
+        'Erro ao consultar Creator Info do TikTok.',
+    )
+
+    erro.codigoTikTok =
+      data?.error?.code || null
+
+    erro.statusHttp = response.status
+    erro.etapa = 'creator_info'
+
+    throw erro
+  }
+
+  return {
+    username: data.data.creator_username,
+    nickname: data.data.creator_nickname,
+    privacyLevels:
+      data.data.privacy_level_options || [],
+    commentsDisabled:
+      data.data.comment_disabled,
+    duetDisabled:
+      data.data.duet_disabled,
+    stitchDisabled:
+      data.data.stitch_disabled,
+    maxVideoDuration:
+      data.data.max_video_post_duration_sec,
+  }
+}
 export async function inicializarPublicacao({
   accessToken,
   titulo,
   videoSize,
   chunkSize,
   totalChunkCount,
+  privacidade,
+  permitirComentarios,
+  permitirDueto,
+  permitirStitch,
 }) {
   const response = await fetch(
     'https://open.tiktokapis.com/v2/post/publish/video/init/',
@@ -178,12 +229,12 @@ export async function inicializarPublicacao({
 
       body: JSON.stringify({
         post_info: {
-          title: titulo,
-          privacy_level: 'SELF_ONLY',
-          disable_duet: false,
-          disable_comment: false,
-          disable_stitch: false,
-        },
+  title: titulo,
+  privacy_level: privacidade,
+  disable_comment: !permitirComentarios,
+  disable_duet: !permitirDueto,
+  disable_stitch: !permitirStitch,
+},
 
         source_info: {
           source: 'FILE_UPLOAD',
